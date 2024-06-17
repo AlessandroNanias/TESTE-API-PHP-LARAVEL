@@ -1,0 +1,76 @@
+services:
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: app
+        restart: unless-stopped
+        working_dir: /var/www/
+        volumes:
+            - ./:/var/www
+        depends_on:
+            - redis
+        networks:
+            - laravel
+        environment:
+            # Adicione variáveis de ambiente para Redis
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+
+    nginx:
+        image: nginx:alpine
+        container_name: nginx
+        restart: unless-stopped
+        ports:
+            - "8989:80"
+        volumes:
+            - ./:/var/www
+            - ./docker/nginx/:/etc/nginx/conf.d/
+        depends_on:
+            - app
+        networks:
+            - laravel
+
+    mysql:
+        image: mysql:5.7.22
+        container_name: mysql
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: laravel
+            MYSQL_ROOT_PASSWORD: root
+            MYSQL_PASSWORD: 123
+            MYSQL_USER: 123
+        volumes:
+            - ./.docker/mysql/dbdata:/var/lib/mysql
+        ports:
+            - "3388:3306"
+        networks:
+            - laravel
+
+    queue:
+        image: especializati/laravel9-app
+        container_name: queue
+        restart: unless-stopped
+        command: "php artisan queue:work"
+        volumes:
+            - ./:/var/www
+        depends_on:
+            - redis
+            - app
+        networks:
+            - laravel
+        environment:
+            # Adicione variáveis de ambiente para Redis
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+
+    # redis
+    redis:
+        image: redis:latest
+        container_name: redis
+        networks:
+            - laravel
+
+networks:
+    laravel:
+        driver: bridge
