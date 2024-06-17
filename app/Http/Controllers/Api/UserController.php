@@ -18,9 +18,9 @@ class UserController extends Controller
 
     public function index()
     {
-        $users = $this->repository->paginate();
+        $users = User::all();
 
-        return UserResource::collection($users);
+        return response()->json($users);
     }
 
     public function store(StoreUpdateUserRequest $request)
